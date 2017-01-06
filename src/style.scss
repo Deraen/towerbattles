@@ -60,6 +60,10 @@ table.game-board {
   }
 }
 
+.game-board__cell--route {
+  background: green;
+}
+
 .game-board__start {
   height: 10px;
   background: #488948;

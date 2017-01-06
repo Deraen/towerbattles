@@ -40,6 +40,9 @@ table.game-board {
   .game-board__cell--tower:hover {
     background: #666; }
 
+.game-board__cell--route {
+  background: green; }
+
 .game-board__start {
   height: 10px;
   background: #488948;
