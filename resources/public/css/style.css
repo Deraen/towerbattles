@@ -8,10 +8,18 @@ html {
 
 /* basic */
 body {
+  font-family: 'Asap', sans-serif;
   background: #222;
   min-height: 100vh;
   margin: 0;
   display: flex; }
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0; }
+
+ul {
+  margin: 0;
+  padding-left: 1rem; }
 
 /* game */
 #app {
@@ -73,4 +81,12 @@ table.game-board {
 .menu {
   height: 30%;
   background: #111;
-  color: #fff; }
+  color: #fff;
+  display: flex;
+  flex-direction: row; }
+  .menu > div {
+    padding: 1rem;
+    flex: 1;
+    border-right: 2px solid #222; }
+    .menu > div:last-child {
+      border: none; }

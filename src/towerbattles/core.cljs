@@ -153,9 +153,17 @@
    [:ul
     [:li [:strong "Path length: "] (count (:route @app-state))]]])
 
+(defn help []
+  [:div.help
+   [:h2 "Controls"]
+   [:ul
+    [:li "Click on cell to toggle wall."]
+    [:li "Drag & drop to build or remove segment of wall."]]])
+
 (defn menu []
   [:div.menu
-   [tools]])
+   [tools]
+   [help]])
 
 (defn main []
   [:div.game-view

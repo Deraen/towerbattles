@@ -16,10 +16,20 @@ html {
 /* basic */
 
 body {
+  font-family: 'Asap', sans-serif;
   background: #222;
   min-height: 100vh;
   margin: 0;
   display: flex;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+}
+
+ul {
+  margin: 0;
+  padding-left: 1rem;
 }
 
 /* game */
@@ -101,6 +111,17 @@ table.game-board {
   height: 30%;
   background: #111;
   color: #fff;
+  display: flex;
+  flex-direction: row;
+
+  & > div {
+    padding: 1rem;
+    flex: 1;
+    border-right: 2px solid #222;
+    &:last-child {
+      border: none;
+    }
+  }
 }
 
 .tools {
