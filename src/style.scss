@@ -13,14 +13,25 @@ $wall: #666;
   $u3: unit($min-font-size);
   $u4: unit($max-font-size);
 
+  $min-vh: 1/(16/9) * $min-vw;
+  $max-vh: 1/(16/9) * $max-vw;
+
   @if $u1 == $u2 and $u1 == $u3 and $u1 == $u4 {
     & {
       font-size: $min-font-size;
-      @media screen and (min-width: $min-vw) {
-        font-size: calc(#{$min-font-size} + #{strip-unit($max-font-size - $min-font-size)} * ((100vw - #{$min-vw}) / #{strip-unit($max-vw - $min-vw)}));
+      // @media screen and (min-width: $min-vw) {
+      //   font-size: calc(#{$min-font-size} + #{strip-unit($max-font-size - $min-font-size)} * ((100vw - #{$min-vw}) / #{strip-unit($max-vw - $min-vw)}));
+      // }
+
+      // @media screen and (min-width: $max-vw) {
+      //   font-size: $max-font-size;
+      // }
+
+      @media screen and (min-height: $min-vh) {
+        font-size: calc(#{$min-font-size} + #{strip-unit($max-font-size - $min-font-size)} * ((100vh - #{$min-vh}) / #{strip-unit($max-vh - $min-vh)}));
       }
 
-      @media screen and (min-width: $max-vw) {
+      @media screen and (min-height: $max-vh) {
         font-size: $max-font-size;
       }
     }
@@ -31,7 +42,7 @@ $wall: #666;
 
 html {
   box-sizing: border-box;
-  @include fluid-type(320px, 2800px, 16px, 64px);
+  @include fluid-type(640px, 2800px, 3px, 32px);
 }
 
 *, *::before, *::after {
@@ -71,8 +82,8 @@ table.game-board {
 
 .game-board__cell {
   background: #eee;
-  width: 1rem;
-  height: 1rem;
+  width: 2rem;
+  height: 2rem;
   border: 1px solid #222;
   cursor: pointer;
 

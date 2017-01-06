@@ -176,7 +176,8 @@
    [:h2 "Controls"]
    [:ul
     [:li "Click on cell to toggle wall."]
-    [:li "Drag & drop to build or remove segment of wall."]]])
+    [:li "Drag & drop to build or remove segment of wall."]
+    [:li "Towers that would block mobs, can't be build."]]])
 
 (defn menu []
   [:div.menu
