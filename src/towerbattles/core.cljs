@@ -44,8 +44,12 @@
                          g-score g-score
                          f-score f-score
                          neighbors (->> [[-1 0] [1 0] [0 -1] [0 1]]
-                                        (map (fn [[my mx]]
-                                               [(+ y my) (+ x mx)]))
+                                        (concat (->> [[-1 -1] [-1 1] [1 1] [1 -1]]
+                                                     (remove (fn [[dy dx]]
+                                                               (and (get-in towers [(+ y dy) x])
+                                                                    (get-in towers [y (+ x dx)]))))))
+                                        (map (fn [[dy dx]]
+                                               [(+ y dy) (+ x dx)]))
                                         (remove closed?)
                                         (remove (fn [[y x]]
                                                   (get-in towers [y x])))
