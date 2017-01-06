@@ -106,6 +106,7 @@
         first-has-tower? (get-in towers (first (:path mouse)))
         mouse-path (set (:path mouse))]
     [:table.game-board
+     {:on-mouse-out #(drag-drop-cancel)}
      [:thead
       [:tr
        {:key "start"}
