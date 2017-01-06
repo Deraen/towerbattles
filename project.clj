@@ -7,11 +7,14 @@
   :min-lein-version "2.7.1"
 
   :dependencies [[org.clojure/clojure "1.8.0"]
-                 [org.clojure/clojurescript "1.9.229"]
-                 [org.clojure/core.async "0.2.395" :exclusions [org.clojure/tools.reader]]]
+                 [org.clojure/clojurescript "1.9.293"]
+                 [org.clojure/core.async "0.2.395" :exclusions [org.clojure/tools.reader]]
+
+                 [reagent "0.6.0"]]
 
   :plugins [[lein-figwheel "0.5.8"]
-            [lein-cljsbuild "1.1.4" :exclusions [[org.clojure/clojure]]]]
+            [lein-cljsbuild "1.1.4" :exclusions [[org.clojure/clojure]]]
+            [deraen/lein-sass4clj "0.3.0"]]
 
   :source-paths ["src"]
 
@@ -33,7 +36,10 @@
   :figwheel {:http-server-root "public"
              :css-dirs ["resources/public/css"]}
 
-  :profiles {:dev {:dependencies [[binaryage/devtools "0.8.2"]
+  :sass {:source-paths ["src"]
+         :target-path "resources/public/css"}
+
+  :profiles {:dev {:dependencies [[binaryage/devtools "0.8.3"]
                                   [figwheel-sidecar "0.5.8"]
                                   [com.cemerick/piggieback "0.2.1"]]
                    :source-paths ["src" "dev"]
