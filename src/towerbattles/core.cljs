@@ -1,6 +1,8 @@
 (ns towerbattles.core
   (:require [reagent.core :as r]
-            [towerbattles.astar :as astar]))
+            [towerbattles.astar :as astar]
+            [towerbattles.utils :as utils]
+            [goog.dom :as dom]))
 
 (enable-console-print!)
 
@@ -78,6 +80,7 @@
 
 (defn drag-drop-hover [current]
   (swap! app-state update :mouse (fn [{:keys [start] :as mouse}]
+                                   (js/console.log mouse)
                                    (assoc mouse :hover current :path (segment-points start current)))))
 
 (defn maybe-build-towers [app-state segment]
@@ -92,57 +95,71 @@
 
 (defn drag-drop-end [current]
   (swap! app-state (fn [app-state]
-                     (-> app-state
-                         (maybe-build-towers (segment-points (:start (:mouse app-state)) current))
-                         refresh-route
-                         (assoc :mouse nil)))))
+                     (if (:mouse app-state)
+                       (-> app-state
+                           (maybe-build-towers (segment-points (:start (:mouse app-state)) current))
+                           refresh-route
+                           (assoc :mouse nil))
+                       app-state))))
 
 (defn drag-drop-cancel []
   (swap! app-state assoc :mouse nil))
 
 (defn game-board []
-  (let [{:keys [towers route mouse]} @app-state
-        route (set route)
-        first-has-tower? (get-in towers (first (:path mouse)))
-        mouse-path (set (:path mouse))]
-    [:table.game-board
-     {:on-mouse-out #(drag-drop-cancel)}
-     [:thead
-      [:tr
-       {:key "start"}
-       [:td.game-board__start {:col-span 9}]]]
-     [:tbody
-      (for [y (range 16)]
-        [:tr
-         {:key y}
-         (for [x (range 9)]
-           [:td.game-board__cell
-            {:key x
-             :class (str (if (get-in towers [y x])
-                           "game-board__cell--tower "
-                           "game-board__cell--empty ")
-                         (if (contains? route [y x])
-                           "game-board__cell--route ")
-                         (if (contains? mouse-path [y x])
-                           (if first-has-tower?
-                             "game-board__cell--selected-remove "
-                             "game-board__cell--selected " )))
-             :on-click #(swap! app-state toggle-tower y x)
-             :on-mouse-down (fn [e]
-                              (.preventDefault e)
-                              (if (or (= 3 (.-which e)) (= 2 (.-button e)))
-                                (drag-drop-cancel)
-                                (drag-drop-start [y x])))
-             :on-mouse-enter (fn [e]
-                               (when mouse
-                                 (drag-drop-hover [y x])))
-             :on-mouse-up (fn [e]
-                            (drag-drop-end [y x]))}
-            ""])])]
-     [:tfoot
-      [:tr
-       {:key "end"}
-       [:td.game-board__end {:col-span 9}]]]]))
+  (let [t-ref (atom nil)
+        t-ref-fn #(reset! t-ref %)]
+    (fn []
+      (let [{:keys [towers route mouse]} @app-state
+            route (set route)
+            first-has-tower? (get-in towers (first (:path mouse)))
+            mouse-path (set (:path mouse))]
+        [utils/window-event-listener
+         ;; Any mouse even outside game-board cancels drag&drop
+         {:on-mouse-over (fn [e]
+                           (if (not (dom/contains @t-ref (.-target e)))
+                             (drag-drop-cancel)))}
+         [:table.game-board
+          {:ref t-ref-fn}
+          [:thead
+           [:tr
+            {:key "start"}
+            [:td.game-board__start {:col-span 9}]]]
+          [:tbody
+           (for [y (range 16)]
+             [:tr
+              {:key y}
+              (for [x (range 9)]
+                [:td.game-board__cell
+                 {:key x
+                  :class (str (if (get-in towers [y x])
+                                "game-board__cell--tower "
+                                "game-board__cell--empty ")
+                              (if (contains? route [y x])
+                                "game-board__cell--route ")
+                              (if (contains? mouse-path [y x])
+                                (if first-has-tower?
+                                  "game-board__cell--selected-remove "
+                                  "game-board__cell--selected " )))
+                  :on-click #(swap! app-state toggle-tower y x)
+                  :on-mouse-down (fn [e]
+                                   (.preventDefault e)
+                                   (if (= 2 (.-button e))
+                                     (drag-drop-cancel)
+                                     (drag-drop-start [y x])))
+                  :on-mouse-enter (fn [e]
+                                    (when mouse
+                                      (drag-drop-hover [y x])))
+                  :on-mouse-up (fn [e]
+                                 (drag-drop-end [y x]))}
+                 ""])])]
+          [:tfoot
+           [:tr
+            {:key "end"}
+            [:td.game-board__end {:col-span 9}]]]]]))))
+
+(defn board-container []
+  [:div.board-container
+   [game-board]])
 
 (defn tools []
   [:div.tools
@@ -170,7 +187,7 @@
   [:div.game-view
    {:on-context-menu (fn [e]
                        (.preventDefault e))}
-   [:div.board-container [game-board]]
+   [board-container]
    [menu]])
 
 (defn on-js-reload []

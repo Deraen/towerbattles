@@ -10,7 +10,8 @@
                  [org.clojure/clojurescript "1.9.293"]
                  [org.clojure/core.async "0.2.395" :exclusions [org.clojure/tools.reader]]
 
-                 [reagent "0.6.0"]]
+                 [reagent "0.6.0"]
+                 [metosin/komponentit "0.2.2"]]
 
   :plugins [[lein-figwheel "0.5.8"]
             [lein-cljsbuild "1.1.4" :exclusions [[org.clojure/clojure]]]
@@ -31,7 +32,13 @@
                            :output-to "resources/public/js/compiled/towerbattles.js"
                            :output-dir "resources/public/js/compiled/out"
                            :source-map-timestamp true
-                           :preloads [devtools.preload]}}]}
+                           :preloads [devtools.preload]}}
+               {:id "min"
+                :source-paths ["src"]
+                :compiler {:output-to "resources/public/js/compiled/towerbattles.js"
+                           :main towerbattles.core
+                           :optimizations :advanced
+                           :pretty-print false}}]}
 
   :figwheel {:http-server-root "public"
              :css-dirs ["resources/public/css"]}
