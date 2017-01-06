@@ -1,9 +1,8 @@
 (ns towerbattles.core
-  (:require [reagent.core :as r]))
+  (:require [reagent.core :as r]
+            [towerbattles.astar :as astar]))
 
 (enable-console-print!)
-
-(defonce app-state (r/atom {:towers {}}))
 
 (defn distance-sq [[y1 x1] [y2 x2]]
   (+ (Math/pow (Math/abs (- y2 y1)) 2)
@@ -12,25 +11,9 @@
 (defn distance [start end]
   (Math/sqrt (distance-sq start end)))
 
-(defn- construct-path [came-from current]
-  (loop [current current
-         path [current]]
-    (if-let [next (get came-from current)]
-      (recur next (conj path next))
-      path)))
-
-(defn- get-best-node [f-score open?]
-  (first (reduce (fn [[current score] this]
-                   (let [this-score (get f-score this)]
-                     (if (or (nil? current)
-                             (< this-score score))
-                       [this this-score]
-                       [current score])))
-                 [nil nil]
-                 open?)))
-
-(defn- get-neigbors [[y x] towers]
+(defn get-neighbors [towers [y x]]
   (concat [[-1 0] [1 0] [0 -1] [0 1]]
+          #_
           (remove (fn [[dy dx]]
                     (and (get-in towers [(+ y dy) x])
                          (get-in towers [y (+ x dx)])))
@@ -43,46 +26,24 @@
 (defn move [[y x] [dy dx]]
   [(+ y dy) (+ x dx)])
 
-(defn astar [towers start end]
-  (loop [open? #{start}
-         closed? #{}
-         g-score {start 0}
-         f-score {start (distance start end)}
-         came-from {}]
-    (if (empty? open?)
-      nil
-      (let [current (get-best-node f-score open?)]
-        (if (= current end)
-          (construct-path came-from current)
-          (let [closed? (conj closed? current)
-                [open? g-score f-score came-from _]
-                (loop [open? (disj open? current)
-                       g-score g-score
-                       f-score f-score
-                       came-from came-from
-                       neighbors (->> (get-neigbors current towers)
-                                      (map (partial move current))
-                                      (remove closed?)
-                                      (remove #(get-in towers %))
-                                      (remove out?))]
-                  (if-let [neighbor (first neighbors)]
-                    (let [t-score (+ (get g-score current) (distance current neighbor))]
-                      (if (<= t-score (get g-score neighbor))
-                        (recur (conj open? neighbor)
-                               g-score
-                               f-score
-                               came-from
-                               (rest neighbors))
-                        (recur (conj open? neighbor)
-                               (assoc g-score neighbor t-score)
-                               (assoc f-score neighbor (+ t-score (distance neighbor end)))
-                               (assoc came-from neighbor current)
-                               (rest neighbors))))
-                    [open? g-score f-score came-from]))]
-            (recur open? closed? g-score f-score came-from)))))))
+(defn refresh-route [{:keys [towers] :as app-state}]
+  (assoc app-state :route (time (astar/astar {:heurestic distance
+                                              :distance distance
+                                              :get-neighbors (fn [current closed?]
+                                                               (->> (get-neighbors towers current)
+                                                                    (map (partial move current))
+                                                                    (remove closed?)
+                                                                    (remove #(get-in towers %))
+                                                                    (remove out?)))
+                                              :start [-1 4]
+                                              :goal [17 4]}))))
 
-(defn refresh-route [app-state]
-  (assoc app-state :route (time (astar (:towers app-state) [-1 4] [17 4]))))
+(def empty-state (refresh-route {:towers {}}))
+
+(defonce app-state (r/atom empty-state))
+
+(defn reset-game []
+  (reset! app-state empty-state))
 
 (defn toggle-tower [app-state y x]
   (-> app-state
@@ -118,8 +79,24 @@
        {:key "end"}
        [:td.game-board__end {:col-span 9}]]]]))
 
+(defn tools []
+  [:div.tools
+   [:button.button
+    {:type "button"
+     :on-click #(reset-game)}
+    "Reset"]
+
+   [:ul
+    [:li [:strong "Path length: "] (count (:route @app-state))]]])
+
+(defn menu []
+  [:div.menu
+   [tools]])
+
 (defn main []
-  [game-board])
+  [:div.game-view
+   [:div.board-container [game-board]]
+   [menu]])
 
 (defn on-js-reload []
   (r/render [main] (js/document.getElementById "app")))

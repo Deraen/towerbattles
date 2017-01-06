@@ -27,8 +27,6 @@ body {
 #app {
   flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 table.game-board {
@@ -74,4 +72,26 @@ table.game-board {
   height: 10px;
   background: #AA1313;
   border: 1px solid #222;
+}
+
+.game-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.board-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu {
+  height: 30%;
+  background: #111;
+  color: #fff;
+}
+
+.tools {
 }
