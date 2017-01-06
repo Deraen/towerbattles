@@ -45,16 +45,66 @@
 (defn reset-game []
   (reset! app-state empty-state))
 
+(defn update-tower [app-state y x f]
+  (let [maybe-new-state (-> app-state
+                            (update-in [:towers y x] f)
+                            refresh-route)]
+    (if (:route maybe-new-state)
+      maybe-new-state
+      app-state)))
+
 (defn toggle-tower [app-state y x]
-  (-> app-state
-      (update-in [:towers y x] (fn [state]
-                                 (if (nil? state)
-                                   true)))
-      refresh-route))
+  (update-tower app-state y x (fn [state]
+                                (if (nil? state)
+                                  true))))
+
+(defn segment-points [[y1 x1] [y2 x2]]
+  (let [dy (- y2 y1)
+        dx (- x2 x1)
+        py (or (/ dy dx) 0)
+        px (or (/ dx dy) 0)]
+    (if (> (Math/abs dy) (Math/abs dx))
+      (let [f (if (pos? dy) + -)]
+        (map (fn [y]
+               [(f y1 y) (Math/round (f x1 (* y px)))])
+             (range (inc (Math/abs dy)))))
+      (let [f (if (pos? dx) + -)]
+        (map (fn [x]
+               [(Math/round (f y1 (* x py))) (f x1 x)])
+             (range (inc (Math/abs dx))))))))
+
+(defn drag-drop-start [current]
+  (swap! app-state assoc :mouse {:start current}))
+
+(defn drag-drop-hover [current]
+  (swap! app-state update :mouse (fn [{:keys [start] :as mouse}]
+                                   (assoc mouse :hover current :path (segment-points start current)))))
+
+(defn maybe-build-towers [app-state segment]
+  (let [first-has-tower? (get-in (:towers app-state) (first segment))]
+    (reduce (fn [app-state [y x]]
+              (update-tower app-state y x (fn [state]
+                                            (if first-has-tower?
+                                              nil
+                                              true))))
+            app-state
+            segment)))
+
+(defn drag-drop-end [current]
+  (swap! app-state (fn [app-state]
+                     (-> app-state
+                         (maybe-build-towers (segment-points (:start (:mouse app-state)) current))
+                         refresh-route
+                         (assoc :mouse nil)))))
+
+(defn drag-drop-cancel []
+  (swap! app-state assoc :mouse nil))
 
 (defn game-board []
-  (let [towers (:towers @app-state)
-        route (set (:route @app-state))]
+  (let [{:keys [towers route mouse]} @app-state
+        route (set route)
+        first-has-tower? (get-in towers (first (:path mouse)))
+        mouse-path (set (:path mouse))]
     [:table.game-board
      [:thead
       [:tr
@@ -71,8 +121,22 @@
                            "game-board__cell--tower "
                            "game-board__cell--empty ")
                          (if (contains? route [y x])
-                           "game-board__cell--route "))
-             :on-click #(swap! app-state toggle-tower y x)}
+                           "game-board__cell--route ")
+                         (if (contains? mouse-path [y x])
+                           (if first-has-tower?
+                             "game-board__cell--selected-remove "
+                             "game-board__cell--selected " )))
+             :on-click #(swap! app-state toggle-tower y x)
+             :on-mouse-down (fn [e]
+                              (.preventDefault e)
+                              (if (or (= 3 (.-which e)) (= 2 (.-button e)))
+                                (drag-drop-cancel)
+                                (drag-drop-start [y x])))
+             :on-mouse-enter (fn [e]
+                               (when mouse
+                                 (drag-drop-hover [y x])))
+             :on-mouse-up (fn [e]
+                            (drag-drop-end [y x]))}
             ""])])]
      [:tfoot
       [:tr
@@ -95,6 +159,8 @@
 
 (defn main []
   [:div.game-view
+   {:on-context-menu (fn [e]
+                       (.preventDefault e))}
    [:div.board-container [game-board]]
    [menu]])
 

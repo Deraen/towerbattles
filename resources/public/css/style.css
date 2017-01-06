@@ -38,6 +38,14 @@ table.game-board {
   .game-board__cell--tower:hover {
     background: #666; }
 
+.game-board__cell--selected {
+  border: 2px solid #8CC9FF;
+  background: #bfe1ff; }
+
+.game-board__cell--selected-remove {
+  border: 2px solid #AA1313;
+  background: #cc8181; }
+
 .game-board__cell--route {
   background: green; }
 

@@ -58,6 +58,16 @@ table.game-board {
   }
 }
 
+.game-board__cell--selected {
+  border: 2px solid $selected;
+  background: lighten($selected, 10);
+}
+
+.game-board__cell--selected-remove {
+  border: 2px solid #AA1313;
+  background: mix(#AA1313, #eee);
+}
+
 .game-board__cell--route {
   background: green;
 }
