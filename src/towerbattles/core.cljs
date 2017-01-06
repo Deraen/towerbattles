@@ -12,67 +12,74 @@
 (defn distance [start end]
   (Math/sqrt (distance-sq start end)))
 
-(defn construct-path [came-from current]
+(defn- construct-path [came-from current]
   (loop [current current
          path [current]]
     (if-let [next (get came-from current)]
       (recur next (conj path next))
       path)))
 
-(defn astar [towers start end]
-  (let [came-from (atom {})]
-    (loop [
-           open? #{start}
-           closed? #{}
-           g-score {start 0}
-           f-score {start (distance start end)}]
-      (if (not (empty? open?))
-        (let [[[y x :as current]] (reduce (fn [[current score] this]
-                                            (let [this-score (get f-score this)]
-                                              (if (or (nil? current)
-                                                      (< this-score score))
-                                                [this this-score]
-                                                [current score])))
-                                          [nil nil]
-                                          open?)]
-          (if (= current end)
-            (construct-path @came-from current)
+(defn- get-best-node [f-score open?]
+  (first (reduce (fn [[current score] this]
+                   (let [this-score (get f-score this)]
+                     (if (or (nil? current)
+                             (< this-score score))
+                       [this this-score]
+                       [current score])))
+                 [nil nil]
+                 open?)))
 
-            (let [closed? (conj closed? current)
-                  [open? g-score f-score _]
-                  (loop [open? (disj open? current)
-                         g-score g-score
-                         f-score f-score
-                         neighbors (->> [[-1 0] [1 0] [0 -1] [0 1]]
-                                        (concat (->> [[-1 -1] [-1 1] [1 1] [1 -1]]
-                                                     (remove (fn [[dy dx]]
-                                                               (and (get-in towers [(+ y dy) x])
-                                                                    (get-in towers [y (+ x dx)]))))))
-                                        (map (fn [[dy dx]]
-                                               [(+ y dy) (+ x dx)]))
-                                        (remove closed?)
-                                        (remove (fn [[y x]]
-                                                  (get-in towers [y x])))
-                                        (remove (fn [[y x]]
-                                                  (not (and (<= 0 x 8)
-                                                            (<= -1 y 17))))))]
-                    (if (empty? neighbors)
-                      [open? g-score f-score]
-                      (let [neighbor (first neighbors)
-                            t-score (+ (get g-score current) (distance current neighbor))]
-                        (if (<= t-score (get g-score neighbor))
-                          (recur (conj open? neighbor)
-                                 g-score
-                                 f-score
-                                 (rest neighbors))
-                          (do
-                            (swap! came-from assoc neighbor current)
-                            (recur (conj open? neighbor)
-                                   (assoc g-score neighbor t-score)
-                                   (assoc f-score neighbor (+ t-score (distance neighbor end)))
-                                   (rest neighbors)))))))]
-              (recur open? closed? g-score f-score))))
-        nil))))
+(defn- get-neigbors [[y x] towers]
+  (concat [[-1 0] [1 0] [0 -1] [0 1]]
+          (remove (fn [[dy dx]]
+                    (and (get-in towers [(+ y dy) x])
+                         (get-in towers [y (+ x dx)])))
+                  [[-1 -1] [-1 1] [1 1] [1 -1]])))
+
+(defn out? [[y x]]
+  (not (and (<= 0 x 8)
+            (<= -1 y 17))))
+
+(defn move [[y x] [dy dx]]
+  [(+ y dy) (+ x dx)])
+
+(defn astar [towers start end]
+  (loop [open? #{start}
+         closed? #{}
+         g-score {start 0}
+         f-score {start (distance start end)}
+         came-from {}]
+    (if (empty? open?)
+      nil
+      (let [current (get-best-node f-score open?)]
+        (if (= current end)
+          (construct-path came-from current)
+          (let [closed? (conj closed? current)
+                [open? g-score f-score came-from _]
+                (loop [open? (disj open? current)
+                       g-score g-score
+                       f-score f-score
+                       came-from came-from
+                       neighbors (->> (get-neigbors current towers)
+                                      (map (partial move current))
+                                      (remove closed?)
+                                      (remove #(get-in towers %))
+                                      (remove out?))]
+                  (if-let [neighbor (first neighbors)]
+                    (let [t-score (+ (get g-score current) (distance current neighbor))]
+                      (if (<= t-score (get g-score neighbor))
+                        (recur (conj open? neighbor)
+                               g-score
+                               f-score
+                               came-from
+                               (rest neighbors))
+                        (recur (conj open? neighbor)
+                               (assoc g-score neighbor t-score)
+                               (assoc f-score neighbor (+ t-score (distance neighbor end)))
+                               (assoc came-from neighbor current)
+                               (rest neighbors))))
+                    [open? g-score f-score came-from]))]
+            (recur open? closed? g-score f-score came-from)))))))
 
 (defn refresh-route [app-state]
   (assoc app-state :route (time (astar (:towers app-state) [-1 4] [17 4]))))
