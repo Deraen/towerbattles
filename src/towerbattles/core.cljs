@@ -23,29 +23,65 @@
 
 (defn out? [[y x]]
   (not (and (<= 0 x 8)
-            (<= -1 y 17))))
+            (<= -1 y 16))))
 
 (defn move [[y x] [dy dx]]
   [(+ y dy) (+ x dx)])
 
 (defn refresh-route [{:keys [towers] :as app-state}]
-  (assoc app-state :route (time (astar/astar {:heurestic distance
-                                              :distance distance
-                                              :get-neighbors (fn [current closed?]
-                                                               (->> (get-neighbors towers current)
-                                                                    (map (partial move current))
-                                                                    (remove closed?)
-                                                                    (remove #(get-in towers %))
-                                                                    (remove out?)))
-                                              :start [-1 4]
-                                              :goal [17 4]}))))
+  (let [route (time (astar/astar {:heurestic distance
+                                  :distance distance
+                                  :get-neighbors (fn [current closed?]
+                                                   (->> (get-neighbors towers current)
+                                                        (map (partial move current))
+                                                        (remove closed?)
+                                                        (remove #(get-in towers %))
+                                                        (remove out?)))
+                                  :start [-1 4]
+                                  :goal [16 4]}))
+        route-map (first (reduce (fn [[acc next] node]
+                                   [(if next
+                                      (assoc acc node next)
+                                      acc)
+                                    node])
+                                 [{} nil]
+                                 route))]
+    (assoc app-state :route route :route-map route-map)))
 
-(def empty-state (refresh-route {:towers {}}))
+(def empty-state (refresh-route {:towers {}
+                                 :mobs []
+                                 :mob-id 0
+                                 :tick 0
+                                 :lives 50}))
 
 (defonce app-state (r/atom empty-state))
 
 (defn reset-game []
   (reset! app-state empty-state))
+
+(defn send-mob []
+  (swap! app-state (fn [state]
+                     (-> state
+                         (update :mob-id inc)
+                         (update :mobs conj {:id (:mob-id state)
+                                             :pos [-1 4]})))))
+
+(defn move-mob [route-map {:keys [pos] :as mob}]
+  (assoc mob :pos (get route-map pos pos)))
+
+(defn move-mobs [{:keys [mobs route-map] :as app-state}]
+  (assoc app-state :mobs (vec (map (partial move-mob route-map) mobs))))
+
+(defn mobs-on-goal [{:keys [mobs] :as app-state}]
+  (let [on-goal (vec (filter (fn [{:keys [pos] :as mob}]
+                               (= [16 4] pos))
+                             mobs))
+        mobs (vec (remove (fn [{:keys [pos] :as mob}]
+                             (= [16 4] pos))
+                          mobs))]
+    (-> app-state
+        (update :lives - (count on-goal))
+        (assoc :mobs mobs))))
 
 (defn update-tower [app-state y x f]
   (let [maybe-new-state (-> app-state
@@ -109,7 +145,7 @@
   (let [t-ref (atom nil)
         t-ref-fn #(reset! t-ref %)]
     (fn []
-      (let [{:keys [towers route mouse]} @app-state
+      (let [{:keys [towers route mouse mobs]} @app-state
             route (set route)
             first-has-tower? (get-in towers (first (:path mouse)))
             mouse-path (set (:path mouse))]
@@ -118,44 +154,51 @@
          {:on-mouse-over (fn [e]
                            (if (not (dom/contains @t-ref (.-target e)))
                              (drag-drop-cancel)))}
-         [:table.game-board
-          {:ref t-ref-fn}
-          [:thead
-           [:tr
-            {:key "start"}
-            [:td.game-board__start {:col-span 9}]]]
-          [:tbody
-           (for [y (range 16)]
-             [:tr
-              {:key y}
-              (for [x (range 9)]
-                [:td.game-board__cell
-                 {:key x
-                  :class (str (if (get-in towers [y x])
-                                "game-board__cell--tower "
-                                "game-board__cell--empty ")
-                              (if (contains? route [y x])
-                                "game-board__cell--route ")
-                              (if (contains? mouse-path [y x])
-                                (if first-has-tower?
-                                  "game-board__cell--selected-remove "
-                                  "game-board__cell--selected " )))
-                  :on-click #(swap! app-state toggle-tower y x)
-                  :on-mouse-down (fn [e]
-                                   (.preventDefault e)
-                                   (if (= 2 (.-button e))
-                                     (drag-drop-cancel)
-                                     (drag-drop-start [y x])))
-                  :on-mouse-enter (fn [e]
-                                    (when mouse
-                                      (drag-drop-hover [y x])))
-                  :on-mouse-up (fn [e]
-                                 (drag-drop-end [y x]))}
-                 ""])])]
-          [:tfoot
-           [:tr
-            {:key "end"}
-            [:td.game-board__end {:col-span 9}]]]]]))))
+         [:div.game-board-container
+          [:table.game-board
+           {:ref t-ref-fn}
+           [:thead
+            [:tr
+             {:key "start"}
+             [:td.game-board__start {:col-span 9}]]]
+           [:tbody
+            (for [y (range 16)]
+              [:tr
+               {:key y}
+               (for [x (range 9)]
+                 [:td.game-board__cell
+                  {:key x
+                   :class (str (if (get-in towers [y x])
+                                 "game-board__cell--tower "
+                                 "game-board__cell--empty ")
+                               (if (contains? route [y x])
+                                 "game-board__cell--route ")
+                               (if (contains? mouse-path [y x])
+                                 (if first-has-tower?
+                                   "game-board__cell--selected-remove "
+                                   "game-board__cell--selected " )))
+                   :on-click #(swap! app-state toggle-tower y x)
+                   :on-mouse-down (fn [e]
+                                    (.preventDefault e)
+                                    (if (= 2 (.-button e))
+                                      (drag-drop-cancel)
+                                      (drag-drop-start [y x])))
+                   :on-mouse-enter (fn [e]
+                                     (when mouse
+                                       (drag-drop-hover [y x])))
+                   :on-mouse-up (fn [e]
+                                  (drag-drop-end [y x]))}
+                  ""])])]
+           [:tfoot
+            [:tr
+             {:key "end"}
+             [:td.game-board__end {:col-span 9}]]]]
+          [:div.mob-container
+           (for [{:keys [id pos]} mobs]
+             [:div.mob
+              {:key id
+               :style {:top (str (inc (* 2 (first pos))) "rem")
+                       :left (str (inc (* 2 (second pos))) "rem")}}])]]]))))
 
 (defn board-container []
   [:div.board-container
@@ -168,7 +211,14 @@
      :on-click #(reset-game)}
     "Reset"]
 
+   [:button.button
+    {:type "button"
+     :on-click #(send-mob)}
+    "Send"]
+
    [:ul
+    [:li [:string "Lives: "] (:lives @app-state)]
+    [:li [:strong "Tick: "] (:tick @app-state)]
     [:li [:strong "Path length: "] (count (:route @app-state))]]])
 
 (defn help []
@@ -191,7 +241,19 @@
    [board-container]
    [menu]])
 
+(defn tick []
+  (swap! app-state (fn [state]
+                     (-> state
+                         (update :tick inc)
+                         move-mobs
+                         mobs-on-goal))))
+
+(defonce game-loop (atom nil))
+
 (defn on-js-reload []
-  (r/render [main] (js/document.getElementById "app")))
+  (r/render [main] (js/document.getElementById "app"))
+  (swap! game-loop (fn [x]
+                     (if x (js/clearInterval x))
+                     (js/setInterval tick 1000))))
 
 (on-js-reload)

@@ -116,7 +116,7 @@ table.game-board {
 }
 
 .game-board__cell--route {
-  background: green;
+  background: lighten(mix(green, #eee), 20%);
 }
 
 .game-board__start {
@@ -160,4 +160,31 @@ table.game-board {
 }
 
 .tools {
+}
+
+.game-board-container {
+  position: relative;
+}
+
+.mob-container {
+  pointer-events: none;
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+}
+
+.mob {
+  position: absolute;
+  background: red;
+  width: .5rem;
+  height: .5rem;
+  margin-top: -.25rem;
+  margin-left: -.25rem;
+
+  top: 0;
+  left: 0;
+
+  transition: top 1s linear, left 1s linear;
 }
