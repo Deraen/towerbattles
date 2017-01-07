@@ -66,15 +66,11 @@ table.game-board {
 .game-board__cell--route {
   background: #badaba; }
 
-.game-board__start {
-  height: 10px;
-  background: #488948;
-  border: 1px solid #222; }
+.game-board__cell--start {
+  border-top: 10px solid green; }
 
-.game-board__end {
-  height: 10px;
-  background: #AA1313;
-  border: 1px solid #222; }
+.game-board__cell--end {
+  border-bottom: 10px solid red; }
 
 .game-view {
   width: 100%; }
@@ -104,8 +100,8 @@ table.game-board {
 .mob-container {
   pointer-events: none;
   position: absolute;
-  top: 10px;
-  bottom: 10px;
+  top: 0;
+  bottom: 0;
   left: 0;
   right: 0; }
 

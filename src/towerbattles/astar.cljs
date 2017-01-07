@@ -17,16 +17,16 @@
                  [nil nil]
                  open?)))
 
-(defn astar [{:keys [heurestic distance get-neighbors start goal]}]
+(defn astar [{:keys [heurestic distance get-neighbors start goal?]}]
   (loop [open? #{start}
          closed? #{}
          g-score {start 0}
-         f-score {start (heurestic start goal)}
+         f-score {start (heurestic start)}
          came-from {}]
     (if (empty? open?)
       nil
       (let [current (get-best-node f-score open?)]
-        (if (= current goal)
+        (if (goal? current)
           (construct-path came-from current)
           (let [closed? (conj closed? current)
                 [open? g-score f-score came-from _]
@@ -45,7 +45,7 @@
                                (rest neighbors))
                         (recur (conj open? neighbor)
                                (assoc g-score neighbor t-score)
-                               (assoc f-score neighbor (+ t-score (heurestic neighbor goal)))
+                               (assoc f-score neighbor (+ t-score (heurestic neighbor)))
                                (assoc came-from neighbor current)
                                (rest neighbors))))
                     [open? g-score f-score came-from]))]
