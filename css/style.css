@@ -3,13 +3,13 @@
 html {
   box-sizing: border-box; }
   html {
-    font-size: 16px; }
-    @media screen and (min-width: 320px) {
+    font-size: 3px; }
+    @media screen and (min-height: 360px) {
       html {
-        font-size: calc(16px + 48 * ((100vw - 320px) / 2480)); } }
-    @media screen and (min-width: 2800px) {
+        font-size: calc(3px + 29 * ((100vh - 360px) / 1215)); } }
+    @media screen and (min-height: 1575px) {
       html {
-        font-size: 64px; } }
+        font-size: 32px; } }
 
 *, *::before, *::after {
   box-sizing: inherit; }
@@ -40,8 +40,8 @@ table.game-board {
 
 .game-board__cell {
   background: #eee;
-  width: 1rem;
-  height: 1rem;
+  width: 2rem;
+  height: 2rem;
   border: 1px solid #222;
   cursor: pointer; }
   .game-board__cell:hover {
@@ -64,7 +64,7 @@ table.game-board {
   background: #cc8181; }
 
 .game-board__cell--route {
-  background: green; }
+  background: #badaba; }
 
 .game-board__start {
   height: 10px;
@@ -97,3 +97,25 @@ table.game-board {
     border-right: 2px solid #222; }
     .menu > div:last-child {
       border: none; }
+
+.game-board-container {
+  position: relative; }
+
+.mob-container {
+  pointer-events: none;
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  right: 0; }
+
+.mob {
+  position: absolute;
+  background: red;
+  width: .5rem;
+  height: .5rem;
+  margin-top: -.25rem;
+  margin-left: -.25rem;
+  top: 0;
+  left: 0;
+  transition: top 1s linear, left 1s linear; }
